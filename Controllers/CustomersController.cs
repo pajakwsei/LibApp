@@ -7,28 +7,31 @@ using LibApp.Models;
 using LibApp.ViewModels;
 using LibApp.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using LibApp.Interfaces;
 
 namespace LibApp.Controllers
 {
+    [Authorize(Roles = "Owner,StoreManager")]
     public class CustomersController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ICustomerRepository repository;
+        private readonly IMembershipTypeRepository membershipTypeRepository;
 
-        public CustomersController(ApplicationDbContext context)
+        public CustomersController(ICustomerRepository repository, IMembershipTypeRepository membershipTypeRepository)
         {
-            _context = context;
+            this.repository = repository;
+            this.membershipTypeRepository = membershipTypeRepository;
         }
 
         public ViewResult Index()
-        {   
+        {
             return View();
         }
 
-        public IActionResult Details(int id)
+        public IActionResult Details(string id)
         {
-            var customer = _context.Customers
-                .Include(c => c.MembershipType)
-                .SingleOrDefault(c => c.Id == id);
+            var customer = repository.GetCustomerById(id);
 
             if (customer == null)
             {
@@ -38,9 +41,11 @@ namespace LibApp.Controllers
             return View(customer);
         }
 
+        [Authorize(Roles = "Owner")]
         public IActionResult New()
         {
-            var membershipTypes = _context.MembershipTypes.ToList();
+            var membershipTypes = membershipTypeRepository.GetMembershipTypes().ToList();
+
             var viewModel = new CustomerFormViewModel()
             {
                 MembershipTypes = membershipTypes
@@ -49,9 +54,10 @@ namespace LibApp.Controllers
             return View("CustomerForm", viewModel);
         }
 
-        public IActionResult Edit(int id)
+        [Authorize(Roles = "Owner")]
+        public IActionResult Edit(string id)
         {
-            var customer = _context.Customers.SingleOrDefault(c => c.Id == id);
+            var customer = repository.GetCustomerById(id);
             if (customer == null)
             {
                 return NotFound();
@@ -59,12 +65,13 @@ namespace LibApp.Controllers
 
             var viewModel = new CustomerFormViewModel(customer)
             {
-                MembershipTypes = _context.MembershipTypes.ToList()
+                MembershipTypes = membershipTypeRepository.GetMembershipTypes().ToList()
             };
 
             return View("CustomerForm", viewModel);
         }
 
+        [Authorize(Roles = "Owner")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Save(Customer customer)
@@ -73,28 +80,30 @@ namespace LibApp.Controllers
             {
                 var viewModel = new CustomerFormViewModel(customer)
                 {
-                    MembershipTypes = _context.MembershipTypes.ToList()
+                    MembershipTypes = membershipTypeRepository.GetMembershipTypes().ToList()
                 };
 
                 return View("CustomerForm", viewModel);
-
             }
-            if (customer.Id == 0)
+            if (customer.Id == null)
             {
-                _context.Customers.Add(customer);
+                customer.Id = Guid.NewGuid().ToString();
+                repository.AddCustomer(customer);
             }
             else
             {
-                var customerInDb = _context.Customers.Single(c => c.Id == customer.Id);
+                var customerInDb = repository.GetCustomerById(customer.Id);
                 customerInDb.Name = customer.Name;
                 customerInDb.Birthdate = customer.Birthdate;
                 customerInDb.MembershipTypeId = customer.MembershipTypeId;
                 customerInDb.HasNewsletterSubscribed = customer.HasNewsletterSubscribed;
+
+                repository.UpdateCustomer(customerInDb);
             }
 
             try
             {
-                _context.SaveChanges();
+                repository.Save();
             }
             catch (DbUpdateException e)
             {

@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace LibApp.Dtos
 {
-    public class NewRentalDto
+    public class GenreDto
     {
-        public int CustomerId { get; set; }
-        public List<int> BookIds { get; set; }
+        public byte Id { get; set; }
+        public string Name { get; set; }
     }
 }

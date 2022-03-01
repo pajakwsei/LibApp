@@ -10,7 +10,6 @@ namespace LibApp.Models
     {
         public byte Id { get; set; }
         [Required]
-        [StringLength(255)]
         public string Name { get; set; }
         public short SignUpFee { get; set; }
         public byte DurationInMonths { get; set; }
@@ -18,5 +17,6 @@ namespace LibApp.Models
 
         public static readonly byte Unknown = 0;
         public static readonly byte PayAsYouGo = 1;
+
     }
 }
