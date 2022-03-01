@@ -15,5 +15,6 @@ namespace LibApp.Profiles
             CreateMap<MembershipType, MembershipTypeDto>();
             CreateMap<MembershipTypeDto, MembershipType>();
         }
+
     }
 }

@@ -6,23 +6,24 @@
 }
 
 <h2>@Model.Title</h2>
-@using (Html.BeginForm("Save", "Customers"))
+
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "saveCustomer" }))
 {
-    @Html.ValidationSummary(true)
+    @Html.ValidationSummary(true, "The provided data is invalid")
     <div class="form-group">
         @Html.LabelFor(m => m.Name)
         @Html.TextBoxFor(m => m.Name, new { @class = "form-control" })
         @Html.ValidationMessageFor(m => m.Name)
-
-        @*<label for="Name" class="form-label">Name</label>
-            <input type="text" class="form-contorl" id="Name" />*@
-
+    </div>
+    <div class="form-group">
+        @Html.LabelFor(m => m.Email)
+        @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+        @Html.ValidationMessageFor(m => m.Email)
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.Birthdate)
-        @Html.TextBoxFor(m => m.Birthdate, new { @class = "form-control" })
+        @Html.TextBoxFor(m => m.Birthdate, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
         @Html.ValidationMessageFor(m => m.Birthdate)
-
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.MembershipTypeId)
@@ -30,18 +31,59 @@
         @Html.ValidationMessageFor(m => m.MembershipTypeId)
     </div>
     <div class="form-group">
-        <label class="form-check">
+        <label class="form-check-label">
             @Html.CheckBoxFor(m => m.HasNewsletterSubscribed)
             Subscribed to Newsletter?
         </label>
     </div>
 
-    @Html.HiddenFor(m => m.Id);
-    @Html.AntiForgeryToken();
+    @Html.HiddenFor(m => m.Id)
+    @Html.AntiForgeryToken()
     <button type="submit" class="btn btn-primary">Save</button>
 }
 
 @section scripts {
     <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+    <script type="text/javascript">
+        function getFormData($form) {
+            var unindexed_array = $form.serializeArray();
+            var indexed_array = {};
+            console.log(unindexed_array);
+            $.map(unindexed_array, function (n, i) {
+                let key = n['name'].replace('Customer.', '');
+                if (key in indexed_array)
+                    return;
+                if (n['value'] === 'false')
+                    n['value'] = false;
+                else if (n['value'] === 'true')
+                    n['value'] = true;
+                else if (n['value'] === '')
+                    n['value'] = null;
+                indexed_array[key] = n['value'];
+            });
+            return indexed_array;
+        }
+        $(document).ready(function () {
+            $("#saveCustomer").data('validator').settings.submitHandler = function (form) {
+                console.log('test');
+                event.preventDefault();
+                let data = getFormData($(form));
+                if (data.Id === null)
+                    delete data.Id;
+                $.ajax({
+                    url: 'Id' in data ? `/api/customers/${data.Id}` : '/api/customers/',
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    type: 'Id' in data ? 'PUT' : 'POST',
+                    data: JSON.stringify(data)
+                }).done(function (data) {
+                    window.location = `/customers/details/${data.id}`;
+                }).fail(function (xhr, status, error) {
+                    alert('Error during saving customer');
+                });
+            };
+        });
+    </script>
 }

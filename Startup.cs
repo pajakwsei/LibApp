@@ -1,17 +1,18 @@
 using LibApp.Data;
+using LibApp.Interfaces;
+using LibApp.Models;
+using LibApp.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 
 namespace LibApp
 {
@@ -27,6 +28,23 @@ namespace LibApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var authenticationSettings = new AuthenticationSettings();
+            Configuration.GetSection("Authentication").Bind(authenticationSettings);
+
+            /*services.AddAuthentication(options =>
+            {
+                
+            }).AddJwtBearer(options => {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidIssuer = authenticationSettings.JwtIssuer,
+                    ValidAudience = authenticationSettings.JwtIssuer,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationSettings.JwtKey))
+                };
+            });*/
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
@@ -34,9 +52,19 @@ namespace LibApp
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            services.AddDefaultIdentity<Customer>(options => { options.SignIn.RequireConfirmedAccount = true; })
+                .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-            services.AddControllersWithViews();
+
+            services.Add(new ServiceDescriptor(typeof(IBookRepository), typeof(BookRepository), ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(typeof(IGenreRepository), typeof(GenreRepository), ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(typeof(IMembershipTypeRepository), typeof(MembershipTypeRepository), ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(typeof(ICustomerRepository), typeof(CustomerRepository), ServiceLifetime.Scoped));
+
+            //services.AddControllersWithViews(options => {
+            //    options.OutputFormatters.RemoveType(typeof(SystemTextJsonOutputFormatter));
+            //    options.ReturnHttpNotAcceptable = true;
+            //}).AddXmlSerializerFormatters();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

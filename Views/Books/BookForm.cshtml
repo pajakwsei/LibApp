@@ -6,34 +6,75 @@
 }
 
 <h2>@Model.Title</h2>
-@using (Html.BeginForm("Save", "Books"))
+
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "saveBook" }))
 {
+    @Html.ValidationSummary(true, "The provided data is invalid")
     <div class="form-group">
         @Html.LabelFor(m => m.Book.Name)
-        @Html.TextBoxFor(m => m.Book.Name, new { @class = "form-control" })
-
-        @*<label for="Name" class="form-label">Name</label>
-            <input type="text" class="form-contorl" id="Name" />*@
-
+        @Html.TextBoxFor(m => m.Book.Name, new { @class = "form-control", @name = "Name" })
+        @Html.ValidationMessageFor(m => m.Book.Name)
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.Book.AuthorName)
         @Html.TextBoxFor(m => m.Book.AuthorName, new { @class = "form-control" })
+        @Html.ValidationMessageFor(m => m.Book.AuthorName)
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.Book.GenreId)
         @Html.DropDownListFor(m => m.Book.GenreId, new SelectList(Model.Genres, "Id", "Name"), "Select Genre", new { @class = "form-control" })
+        @Html.ValidationMessageFor(m => m.Book.GenreId)
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.Book.ReleaseDate)
-        @Html.TextBoxFor(m => m.Book.ReleaseDate, new { @class = "form-control" })
+        @Html.TextBoxFor(m => m.Book.ReleaseDate, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+        @Html.ValidationMessageFor(m => m.Book.ReleaseDate)
     </div>
     <div class="form-group">
         @Html.LabelFor(m => m.Book.NumberInStock)
         @Html.TextBoxFor(m => m.Book.NumberInStock, new { @class = "form-control" })
+        @Html.ValidationMessageFor(m => m.Book.NumberInStock)
     </div>
 
 
     @Html.HiddenFor(m => m.Book.Id);
+    @Html.AntiForgeryToken()
     <button type="submit" class="btn btn-primary">Save</button>
+}
+
+@section scripts {
+    <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+    <script type="text/javascript">
+        function getFormData($form) {
+            var unindexed_array = $form.serializeArray();
+            var indexed_array = {};
+            $.map(unindexed_array, function (n, i) {
+                indexed_array[n['name'].replace('Book.', '')] = n['value'];
+            });
+            return indexed_array;
+        }
+        $(document).ready(function () {
+            $("#saveBook").data('validator').settings.submitHandler = function (form) {
+                console.log('test');
+                event.preventDefault();
+                let data = getFormData($(form));
+                if (data.Id.length == 0) {
+                    delete data.Id;
+                }
+                $.ajax({
+                    url: 'Id' in data ? `/api/books/${data.Id}` : '/api/books/',
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    type: 'Id' in data ? 'PUT' : 'POST',
+                    data: JSON.stringify(data)
+                }).done(function (data) {
+                    window.location = `/books/details/${data.id}`;
+                }).fail(function (xhr, status, error) {
+                    alert('Error during saving book');
+                });
+            };
+        });
+    </script>
 }
