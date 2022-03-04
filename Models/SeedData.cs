@@ -8,7 +8,7 @@ namespace LibApp.Models
 {
     public static class SeedData
     {
-       
+
         public static void Initialize(IServiceProvider serviceProvider)
         {
             using (var context = new ApplicationDbContext(
@@ -55,8 +55,12 @@ namespace LibApp.Models
                               DurationInMonths = 12,
                               DiscountRate = 20
                           });
-               
+                    context.SaveChanges();
 
+                }
+
+                if (!context.Customers.Any())
+                {
                     context.Customers.AddRange(
                     new Customer
                     {
@@ -82,25 +86,45 @@ namespace LibApp.Models
                         HasNewsletterSubscribed = false,
                         MembershipTypeId = 2
                     });
-                    context.SaveChanges();
-                
 
-            
+                    context.SaveChanges();
+                }
+                if (!context.Customers.Any())
+                {
                     context.Books.AddRange(
                 new Book
                 {
-                    Name = "Mama Darka"
+                    Name = "Mama Darka",
+                    AuthorName = "Krzysiu",
+                    GenreId = 1,
+                    DateAdded = new DateTime(2021, 11, 11),
+                    ReleaseDate = new DateTime(2021, 08, 22),
+                    NumberInStock = 12,
+                    NumberAvailable = 6
                 },
                 new Book
                 {
-                    Name = "Champions"
+                    Name = "Champions",
+                    AuthorName = "Krzysiu",
+                    GenreId = 1,
+                    DateAdded = new DateTime(2021, 11, 11),
+                    ReleaseDate = new DateTime(2021, 08, 22),
+                    NumberInStock = 12,
+                    NumberAvailable = 6
                 },
                 new Book
                 {
-                    Name = "Mine Craft"
+                    Name = "Mine Craft",
+                    AuthorName = "Krzysiu",
+                    GenreId = 1,
+                    DateAdded = new DateTime(2021, 11, 11),
+                    ReleaseDate = new DateTime(2021, 08, 22),
+                    NumberInStock = 12,
+                    NumberAvailable = 6
                 }
                 );
                     context.SaveChanges();
+
                 }
 
                 context.SaveChanges();
@@ -108,3 +132,4 @@ namespace LibApp.Models
         }
     }
 }
+//}
