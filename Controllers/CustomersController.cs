@@ -4,29 +4,31 @@ using LibApp.Data;
 using LibApp.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using LibApp.Models;
+using LibApp.Interfaces;
 using System;
 
 namespace LibApp.Controllers
 {
     public class CustomersController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ICustomerRepository _customers;
+        private readonly IMembershipTypeRepository _membershipTypes;
 
-        public CustomersController(ApplicationDbContext context)
+        public CustomersController(ICustomerRepository customers, IMembershipTypeRepository membersipTypes)
         {
-            _context = context;
+            _customers = customers;
+            _membershipTypes = membersipTypes;
         }
-
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner, StoreManager")]
         public ViewResult Index()
-        {            
-            return View();
+        {
+            var customers = _customers.GetCustomers();
+            return View(customers);
         }
-
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner, StoreManager")]
         public IActionResult Details(int id)
         {
-            var customer = _context.Customers
-                .Include(c => c.MembershipType)
-                .SingleOrDefault(c => c.Id == id);
+            var customer = _customers.GetCustomerById(id.ToString());
 
             if (customer == null)
             {
@@ -38,8 +40,7 @@ namespace LibApp.Controllers
 
         public IActionResult New()
         {
-            var membershipTypes = _context.MembershipTypes.ToList();
-
+            var membershipTypes = _membershipTypes.GetMembershipTypes();
             var viewModel = new CustomerFormViewModel()
             {
                 MembershipTypes = membershipTypes
@@ -47,10 +48,10 @@ namespace LibApp.Controllers
 
             return View("CustomerForm", viewModel);
         }
-
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
         public IActionResult Edit(int id)
         {
-            var customer = _context.Customers.SingleOrDefault(c => c.Id == id);
+            var customer = _customers.GetCustomerById(id.ToString());
             if (customer == null)
             {
                 return NotFound();
@@ -58,7 +59,7 @@ namespace LibApp.Controllers
 
             var viewModel = new CustomerFormViewModel(customer)
             {
-                MembershipTypes = _context.MembershipTypes.ToList()
+                MembershipTypes = _membershipTypes.GetMembershipTypes()
             };
 
             return View("CustomerForm", viewModel);
@@ -72,19 +73,19 @@ namespace LibApp.Controllers
             {
                 var viewModel = new CustomerFormViewModel(customer)
                 {
-                    MembershipTypes = _context.MembershipTypes.ToList()
+                    MembershipTypes = _membershipTypes.GetMembershipTypes()
                 };
 
                 return View("CustomerForm", viewModel);
-            }
 
+            }
             if (customer.Id == 0)
             {
-                _context.Customers.Add(customer);
+                _customers.AddCustomer(customer);
             }
             else
             {
-                var customerInDb = _context.Customers.Single(c => c.Id == customer.Id);
+                var customerInDb = _customers.GetCustomerById(customer.Id.ToString());
                 customerInDb.Name = customer.Name;
                 customerInDb.Birthdate = customer.Birthdate;
                 customerInDb.MembershipTypeId = customer.MembershipTypeId;
@@ -93,7 +94,7 @@ namespace LibApp.Controllers
 
             try
             {
-                _context.SaveChanges();
+                _customers.Save();
             }
             catch (DbUpdateException e)
             {
@@ -101,7 +102,6 @@ namespace LibApp.Controllers
             }
 
             return RedirectToAction("Index", "Customers");
-
         }
     }
 }

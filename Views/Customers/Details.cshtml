@@ -1,4 +1,4 @@
-@model LibApp.Models.Customer
+@model Customer
 
 @{
     ViewBag.Title = Model.Name;
@@ -13,3 +13,7 @@
         <li>Birthdate: @Model.Birthdate.Value.ToShortDateString()</li>
     }
 </ul>
+@if (User.IsInRole("Owner"))
+{
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+}
